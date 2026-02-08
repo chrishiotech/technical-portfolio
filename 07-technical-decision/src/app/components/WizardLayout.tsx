@@ -1,9 +1,11 @@
 import { Outlet, useLocation } from "react-router";
-import { CheckCircle2 } from "lucide-react";
+import Footer from "./Footer";
+import Header from "./Header";
+import ProgressSteps from "./ProgressSteps";
 
 export function WizardLayout() {
   const location = useLocation();
-  
+
   const steps = [
     { path: "/", label: "Project Overview" },
     { path: "/technical", label: "Technical Requirements" },
@@ -11,10 +13,14 @@ export function WizardLayout() {
     { path: "/results", label: "Results" },
   ];
 
-  const currentStepIndex = steps.findIndex(step => step.path === location.pathname);
+  const currentStepIndex = steps.findIndex(
+    (step) => step.path === location.pathname,
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
+      <Header />
+
       {/* Header */}
       <header className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-8 py-6">
@@ -28,56 +34,14 @@ export function WizardLayout() {
       </header>
 
       {/* Progress Steps */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <div key={step.path} className="flex items-center flex-1">
-                <div className="flex items-center">
-                  <div
-                    className={`flex items-center justify-center w-10 h-10 rounded-full font-medium transition-colors ${
-                      index < currentStepIndex
-                        ? "bg-[#1e3a8a] text-white"
-                        : index === currentStepIndex
-                        ? "bg-[#1e3a8a] text-white"
-                        : "bg-slate-200 text-[#64748b]"
-                    }`}
-                  >
-                    {index < currentStepIndex ? (
-                      <CheckCircle2 className="w-6 h-6" />
-                    ) : (
-                      <span>{index + 1}</span>
-                    )}
-                  </div>
-                  <span
-                    className={`ml-3 text-sm font-medium ${
-                      index <= currentStepIndex
-                        ? "text-[#1e3a8a]"
-                        : "text-[#64748b]"
-                    }`}
-                  >
-                    {step.label}
-                  </span>
-                </div>
-                {index < steps.length - 1 && (
-                  <div
-                    className={`flex-1 h-0.5 mx-4 ${
-                      index < currentStepIndex
-                        ? "bg-[#1e3a8a]"
-                        : "bg-slate-200"
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <ProgressSteps steps={steps} currentStepIndex={currentStepIndex} />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-8 py-12">
+      <main className="max-w-7xl mx-auto px-8 py-12 flex-1">
         <Outlet />
       </main>
+
+      <Footer />
     </div>
   );
 }
