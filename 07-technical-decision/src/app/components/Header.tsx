@@ -23,15 +23,15 @@ export default function Header() {
             href="https://landing-chi-liart.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-slate-700 hover:text-[#1e3a8a]"
+            className="flex items-center gap-2 font-medium text-slate-700 hover:text-[#1e3a8a]"
           >
-            Home
+            🏠 Home
           </a>
           <a
             href="#contact"
-            className="font-medium text-slate-700 hover:text-[#1e3a8a]"
+            className="flex items-center gap-2 font-medium text-slate-700 hover:text-[#1e3a8a]"
           >
-            Contacto
+            📧 Contacto
           </a>
           <a
             href="https://github.com/chrishiotech/technical-portfolio"
@@ -39,7 +39,7 @@ export default function Header() {
             rel="noopener noreferrer"
             className="rounded-lg bg-[#1e3a8a] px-6 py-2 font-medium text-white transition hover:bg-slate-800"
           >
-            Ver Proyectos
+            📂 Revisar Arquitectura
           </a>
         </div>
 
@@ -61,17 +61,17 @@ export default function Header() {
               href="https://landing-chi-liart.vercel.app/"
               target="_blank"
               rel="noopener noreferrer"
-              className="block font-medium text-slate-700 hover:text-[#1e3a8a] py-2"
+              className="flex items-center gap-2 font-medium text-slate-700 hover:text-[#1e3a8a] py-2"
               onClick={() => setIsMenuOpen(false)}
             >
-              Home
+              🏠 Home
             </a>
             <a
               href="#contact"
-              className="block font-medium text-slate-700 hover:text-[#1e3a8a] py-2"
+              className="flex items-center gap-2 py-2 font-medium text-slate-700 hover:text-[#1e3a8a]"
               onClick={() => setIsMenuOpen(false)}
             >
-              Contacto
+              📧 Contacto
             </a>
             <a
               href="https://github.com/chrishiotech/technical-portfolio"
