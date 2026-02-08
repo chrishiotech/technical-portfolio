@@ -15,7 +15,7 @@ const ProgressSteps: React.FC<ProgressStepsProps> = ({
 }) => {
   return (
     <div className="bg-white border-b border-slate-200">
-      <div className="max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
+      <div className="max-w-6xl mx-auto px-6 py-4 sm:py-6">
         {/* Mobile: Vertical Layout */}
         <div className="flex flex-col sm:hidden space-y-3">
           {steps.map((step, index) => (
@@ -49,9 +49,12 @@ const ProgressSteps: React.FC<ProgressStepsProps> = ({
         </div>
 
         {/* Desktop: Horizontal Layout */}
-        <div className="hidden sm:flex items-center justify-between">
+        <div className="hidden sm:flex items-center justify-center">
           {steps.map((step, index) => (
-            <div key={step.path} className="flex items-center flex-1">
+            <div
+              key={step.path}
+              className={`flex items-center ${index === steps.length - 1 ? "flex-shrink-0" : "flex-1"}`}
+            >
               <div className="flex items-center">
                 <div
                   className={`flex items-center justify-center w-10 h-10 rounded-full font-medium transition-colors ${

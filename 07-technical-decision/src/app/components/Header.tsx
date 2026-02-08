@@ -20,10 +20,12 @@ export default function Header() {
         {/* Navigation */}
         <div className="hidden md:flex items-center gap-8">
           <a
-            href="#portfolio"
+            href="https://landing-chi-liart.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="font-medium text-slate-700 hover:text-[#1e3a8a]"
           >
-            Portafolio
+            Home
           </a>
           <a
             href="#contact"
@@ -56,11 +58,13 @@ export default function Header() {
         <div className="md:hidden border-t border-slate-200 bg-white">
           <div className="px-6 py-4 space-y-4">
             <a
-              href="#portfolio"
+              href="https://landing-chi-liart.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="block font-medium text-slate-700 hover:text-[#1e3a8a] py-2"
               onClick={() => setIsMenuOpen(false)}
             >
-              Portafolio
+              Home
             </a>
             <a
               href="#contact"
