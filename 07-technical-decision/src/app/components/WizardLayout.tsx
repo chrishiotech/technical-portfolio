@@ -37,7 +37,7 @@ export function WizardLayout() {
       <ProgressSteps steps={steps} currentStepIndex={currentStepIndex} />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-8 py-12 flex-1">
+      <main className="max-w-7xl px-2 py-6 flex-1 xl:mx-auto">
         <Outlet />
       </main>
 

@@ -1,47 +1,47 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
 import {
   ArrowLeft,
-  RotateCcw,
   CheckCircle2,
-  TrendingUp,
   Download,
+  RotateCcw,
   Share2,
-  Info,
+  TrendingUp,
 } from "lucide-react";
-import { wizardStore } from "../store";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import {
-  BarChart,
   Bar,
-  LineChart,
+  BarChart,
+  CartesianGrid,
+  Legend,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
 } from "recharts";
-import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
-import { Tooltip as Hint, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import contentDual from "../../../content-dual.json";
+import { wizardStore } from "../store";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "./ui/table";
-import contentDual from "../../../content-dual.json";
+
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 export function Results() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState(wizardStore.getData());
   const [audience, setAudience] = useState<"human" | "technical">("human");
   const [copied, setCopied] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false); // Optional loading state
 
   useEffect(() => {
     const unsubscribe = wizardStore.subscribe(() => {
@@ -50,25 +50,27 @@ export function Results() {
     return unsubscribe;
   }, []);
 
-  // Calculate recommendation based on inputs
   const calculateRecommendation = () => {
     // Microservices score based on various factors
     const microservicesScore =
       (formData.scalability * 0.3 +
         formData.performance * 0.2 +
         formData.expertiseLevel * 0.2 +
-        formData.flexibility * 0.3) / 100;
+        formData.flexibility * 0.3) /
+      100;
 
     // Monolith score based on inverse factors
     const monolithScore =
       (formData.timeToMarket * 0.4 +
         formData.cost * 0.3 +
         (100 - formData.scalability) * 0.2 +
-        (100 - formData.expertiseLevel) * 0.1) / 100;
+        (100 - formData.expertiseLevel) * 0.1) /
+      100;
 
-    const recommended = microservicesScore > monolithScore ? "microservices" : "monolith";
+    const recommended =
+      microservicesScore > monolithScore ? "microservices" : "monolith";
     const confidence = Math.round(
-      Math.max(microservicesScore, monolithScore) * 100
+      Math.max(microservicesScore, monolithScore) * 100,
     );
 
     return { recommended, confidence };
@@ -76,52 +78,129 @@ export function Results() {
 
   const { recommended, confidence } = calculateRecommendation();
 
-  // Data for architecture comparison chart
-  const comparisonData = [
-    {
-      category: "Scalability",
-      Microservices: 95,
-      Monolith: 60,
-    },
-    {
-      category: "Speed to Market",
-      Microservices: 65,
-      Monolith: 90,
-    },
-    {
-      category: "Cost Efficiency",
-      Microservices: 60,
-      Monolith: 85,
-    },
-    {
-      category: "Flexibility",
-      Microservices: 90,
-      Monolith: 55,
-    },
-    {
-      category: "Maintenance",
-      Microservices: 70,
-      Monolith: 75,
-    },
-  ];
+  const handleDownloadPDF = async () => {
+    setIsGeneratingPDF(true);
+    const element = document.getElementById("report-content"); // Back to report-content only
 
-  // Data for ROI projection chart
-  const roiData = [
-    { month: "Month 1", Microservices: -50, Monolith: -30 },
-    { month: "Month 3", Microservices: -40, Monolith: -10 },
-    { month: "Month 6", Microservices: -20, Monolith: 20 },
-    { month: "Month 9", Microservices: 10, Monolith: 40 },
-    { month: "Month 12", Microservices: 45, Monolith: 55 },
-    { month: "Month 18", Microservices: 85, Monolith: 70 },
-    { month: "Month 24", Microservices: 130, Monolith: 85 },
-  ];
+    if (!element) {
+      setIsGeneratingPDF(false);
+      return;
+    }
 
-  const month12 = roiData.find((item) => item.month === "Month 12");
-  const month1 = roiData[0];
+    try {
+      // 1. Create a temporary clone of element to clean it up before capturing
+      const clone = element.cloneNode(true) as HTMLElement;
+      const container = document.createElement("div");
+      container.style.position = "fixed";
+      container.style.left = "-9999px"; // Move off-screen
+      container.style.top = "0";
+      container.style.width = "1200px"; // Fixed width for PDF
+      container.appendChild(clone);
+      document.body.appendChild(container);
+
+      // 2. Replace only problematic colors, keep layout intact
+      const replaceAllStyles = (element: Element) => {
+        const htmlEl = element as HTMLElement;
+
+        // Get computed style to check for oklch/oklab
+        const computedStyle = window.getComputedStyle(htmlEl);
+
+        // Check and replace background color
+        const bgColor = computedStyle.backgroundColor;
+        if (
+          bgColor &&
+          (bgColor.includes("oklch") || bgColor.includes("oklab"))
+        ) {
+          htmlEl.style.backgroundColor = "#ffffff";
+        }
+
+        // Check and replace text color
+        const textColor = computedStyle.color;
+        if (
+          textColor &&
+          (textColor.includes("oklch") || textColor.includes("oklab"))
+        ) {
+          htmlEl.style.color = "#000000";
+        }
+
+        // Recursively process children
+        Array.from(element.children).forEach((child) =>
+          replaceAllStyles(child as Element),
+        );
+      };
+
+      // 3. Remove all <style> tags that might contain oklch
+      Array.from(clone.querySelectorAll("style")).forEach((style: Element) =>
+        (style as HTMLElement).remove(),
+      );
+
+      // 4. Keep layout classes, remove only color-related classes
+      Array.from(clone.querySelectorAll("*")).forEach((el: Element) => {
+        const htmlEl = el as HTMLElement;
+        const classList = htmlEl.className;
+
+        if (classList && typeof classList === "string") {
+          // Keep layout classes, remove only color-related ones
+          const safeClasses = classList
+            .split(" ")
+            .filter((cls) => {
+              // Remove classes that might contain oklch/oklab colors
+              return (
+                !cls.includes("bg-") &&
+                !cls.includes("text-") &&
+                !cls.includes("border-") &&
+                !cls.includes("shadow-")
+              );
+            })
+            .join(" ");
+          htmlEl.className = safeClasses;
+        }
+      });
+
+      // Apply the style replacement
+      replaceAllStyles(clone);
+
+      console.log("2. Creating canvas snapshot...");
+
+      const canvas = await html2canvas(clone, {
+        scale: 1.5, // Reduced scale to fit in one page
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        allowTaint: true,
+        width: 1200, // Fixed width for PDF
+        height: 1600, // Approximate height for A4 ratio
+        // Additional options to prevent color parsing issues
+        ignoreElements: (element) => {
+          // Ignore elements that might cause issues
+          return element.tagName === "STYLE" || element.tagName === "LINK";
+        },
+      });
+
+      // Clean up the clone
+      document.body.removeChild(container);
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, imgHeight);
+      pdf.save("reporte-arquitectura.pdf");
+    } catch (error) {
+      console.error("❌ ERROR generating PDF:", error);
+      alert("Hubo un error al generar el PDF. Por favor intenta de nuevo.");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(
+        "https://07-technical-decision.vercel.app/",
+      );
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -142,379 +221,305 @@ export function Results() {
   const explanationMode = audience === "human" ? "human" : "technical";
 
   return (
-    <div className="space-y-6">
+    <div id="report-content" className="space-y-6">
+      {/* ... (Keep all your existing JSX content: Header, Charts, Tables, etc.) ... */}
+
       {/* Header Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-10 transition-all duration-300 ease-out hover:shadow-md">
-        <div className="mb-8">
-          <h2 className="text-3xl font-semibold text-[#1e3a8a] mb-2">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 md:p-10 transition-all duration-300 ease-out hover:shadow-md">
+        {/* ... existing content ... */}
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-[#1e3a8a] mb-2">
             Architecture Recommendation
           </h2>
-          <p className="text-[#64748b]">
+          <p className="text-sm sm:text-base text-[#64748b]">
             Based on your inputs, here's our analysis and recommendation
           </p>
         </div>
 
         {/* Recommendation Badge */}
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between bg-gradient-to-r from-blue-50 to-slate-50 border-2 border-[#1e3a8a] rounded-xl p-6 md:p-8 mb-8 transition-all duration-300 ease-out">
-          <div className="flex items-center gap-4">
-            <div className="bg-[#1e3a8a] text-white rounded-full p-4 shadow-sm">
-              <CheckCircle2 className="w-8 h-8" />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-gradient-to-r from-blue-50 to-slate-50 border-2 border-[#1e3a8a] rounded-xl p-4 sm:p-6 md:p-8 mb-6 sm:mb-8 transition-all duration-300 ease-out">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="bg-[#1e3a8a] text-white rounded-full p-3 sm:p-4 shadow-sm">
+              <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8" />
             </div>
             <div>
-              <p className="text-sm text-[#64748b] mb-1">Recommended Architecture</p>
-              <div className="flex items-center gap-3">
-                <h3 className="text-3xl font-semibold text-[#1e3a8a] capitalize">
-                  {recommended}
+              <p className="text-xs sm:text-sm text-[#64748b] mb-1">
+                Recommended Architecture
+              </p>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <h3 className="text-xl sm:text-3xl font-semibold text-[#1e3a8a] capitalize">
+                  {calculateRecommendation().recommended}
                 </h3>
-                <Badge className="bg-[#1e3a8a]/10 text-[#1e3a8a] border border-[#1e3a8a]/20">
+                <Badge className="bg-[#1e3a8a]/10 text-[#1e3a8a] border border-[#1e3a8a]/20 text-xs sm:text-sm">
                   Primary Choice
                 </Badge>
               </div>
             </div>
           </div>
           <div className="text-left lg:text-right">
-            <p className="text-sm text-[#64748b] mb-1">Confidence Score</p>
+            <p className="text-xs sm:text-sm text-[#64748b] mb-1">
+              Confidence Score
+            </p>
             <div className="flex items-baseline gap-1 lg:justify-end">
-              <span className="text-4xl font-semibold text-[#1e3a8a]">
-                {confidence}
+              <span className="text-2xl sm:text-4xl font-semibold text-[#1e3a8a]">
+                {calculateRecommendation().confidence}
               </span>
-              <span className="text-xl text-[#64748b]">%</span>
+              <span className="text-lg sm:text-xl text-[#64748b]">%</span>
             </div>
           </div>
         </div>
 
         {/* Key Insights */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-50 rounded-lg p-6 border border-slate-200 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-sm">
-            <h4 className="text-sm font-medium text-[#64748b] mb-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="bg-slate-50 rounded-lg p-4 sm:p-6 border border-slate-200 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-sm">
+            <h4 className="text-xs sm:text-sm font-medium text-[#64748b] mb-2">
               Project: {formData.projectName || "Unnamed Project"}
             </h4>
             <p className="text-xs text-[#64748b]">
               Team: {formData.teamSize || "Not specified"}
             </p>
           </div>
-          <div className="bg-slate-50 rounded-lg p-6 border border-slate-200 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-sm">
-            <h4 className="text-sm font-medium text-[#64748b] mb-2">
+          <div className="bg-slate-50 rounded-lg p-4 sm:p-6 border border-slate-200 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-sm">
+            <h4 className="text-xs sm:text-sm font-medium text-[#64748b] mb-2">
               Expected Load
             </h4>
             <p className="text-xs text-[#64748b]">
               {formData.userLoad || "Not specified"}
             </p>
           </div>
-          <div className="bg-slate-50 rounded-lg p-6 border border-slate-200 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-sm">
-            <h4 className="text-sm font-medium text-[#64748b] mb-2">
+          <div className="bg-slate-50 rounded-lg p-4 sm:p-6 border border-slate-200 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-sm">
+            <h4 className="text-xs sm:text-sm font-medium text-[#64748b] mb-2">
               Top Priority
             </h4>
             <p className="text-xs text-[#64748b]">
-              {formData.timeToMarket >= formData.cost && formData.timeToMarket >= formData.flexibility
+              {formData.timeToMarket >= formData.cost &&
+              formData.timeToMarket >= formData.flexibility
                 ? "Time to Market"
                 : formData.cost >= formData.flexibility
-                ? "Cost Efficiency"
-                : "Flexibility"}
+                  ? "Cost Efficiency"
+                  : "Flexibility"}
             </p>
           </div>
         </div>
       </div>
 
       {/* Architecture Comparison Chart */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-10 transition-all duration-300 ease-out hover:shadow-md">
-        <h3 className="text-xl font-semibold text-[#1e3a8a] mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 md:p-10 transition-all duration-300 ease-out hover:shadow-md">
+        <h3 className="text-lg sm:text-xl font-semibold text-[#1e3a8a] mb-4 sm:mb-6">
           Architecture Comparison
         </h3>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={comparisonData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="category" stroke="#64748b" />
-            <YAxis stroke="#64748b" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "white",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-              }}
-            />
-            <Legend />
-            <Bar dataKey="Microservices" fill="#1e3a8a" radius={[8, 8, 0, 0]} />
-            <Bar dataKey="Monolith" fill="#64748b" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Dual Explanation */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-10 transition-all duration-300 ease-out hover:shadow-md">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-[#1e3a8a]">
-              Dual Explanation
-            </h3>
-            <p className="text-sm text-[#64748b]">
-              Alterna entre lenguaje humano y técnico sin perder el ROI.
-            </p>
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-[320px]">
+            <ResponsiveContainer width="100%" height={150}>
+              <BarChart
+                data={[
+                  { category: "Scalability", Microservices: 95, Monolith: 60 },
+                  { category: "Speed", Microservices: 65, Monolith: 90 },
+                  { category: "Cost", Microservices: 60, Monolith: 85 },
+                  { category: "Flexibility", Microservices: 90, Monolith: 55 },
+                  { category: "Maintenance", Microservices: 70, Monolith: 75 },
+                ]}
+                margin={{ top: 5, right: 10, left: 5, bottom: 40 }}
+              >
+                <CartesianGrid strokeDasharray="2 2" stroke="#e2e8f0" />
+                <XAxis
+                  dataKey="category"
+                  stroke="#64748b"
+                  angle={-45}
+                  textAnchor="end"
+                  height={50}
+                  fontSize={9}
+                  tick={{ fontSize: 9 }}
+                />
+                <YAxis stroke="#64748b" fontSize={9} tick={{ fontSize: 9 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "white",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "4px",
+                    fontSize: 10,
+                    padding: 6,
+                  }}
+                />
+                <Legend
+                  wrapperStyle={{ fontSize: 10, paddingTop: 8 }}
+                  iconSize={10}
+                />
+                <Bar
+                  dataKey="Microservices"
+                  fill="#1e3a8a"
+                  radius={[2, 2, 0, 0]}
+                />
+                <Bar dataKey="Monolith" fill="#64748b" radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-          <Tabs value={audience} onValueChange={(value) => setAudience(value as "human" | "technical")}>
-            <TabsList className="bg-slate-100 border border-slate-200 rounded-full px-1 py-1">
-              <TabsTrigger
-                value="human"
-                className="rounded-full px-4 data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white transition-all duration-300"
-              >
-                Para Todo Público
-              </TabsTrigger>
-              <TabsTrigger
-                value="technical"
-                className="rounded-full px-4 data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white transition-all duration-300"
-              >
-                Para Especialistas
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {(["monolith", "microservices"] as const).map((key) => {
-            const data = explanationData[key][explanationMode];
-            const isRecommended = key === recommended;
-            return (
-              <div
-                key={key}
-                className={`rounded-xl border p-6 transition-all duration-300 ease-out ${
-                  isRecommended
-                    ? "border-[#1e3a8a] bg-blue-50/40 shadow-sm"
-                    : "border-slate-200 bg-white"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-lg font-semibold text-[#1e3a8a]">
-                    {data.title}
-                  </h4>
-                  {isRecommended && (
-                    <Badge className="bg-[#1e3a8a] text-white">Recomendado</Badge>
-                  )}
-                </div>
-                {"analogy" in data && (
-                  <p className="text-sm text-[#64748b] mb-4">{data.analogy}</p>
-                )}
-                {"definition" in data && (
-                  <p className="text-sm text-[#64748b] mb-4">{data.definition}</p>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  <div className="bg-white border border-slate-200 rounded-lg p-4">
-                    <p className="text-xs font-semibold text-[#1e3a8a] mb-2">
-                      Pros
-                    </p>
-                    <ul className="text-xs text-[#475569] space-y-1">
-                      {data.pros.map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="bg-white border border-slate-200 rounded-lg p-4">
-                    <p className="text-xs font-semibold text-[#1e3a8a] mb-2">
-                      Cons
-                    </p>
-                    <ul className="text-xs text-[#475569] space-y-1">
-                      {data.cons.map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                {"when_to_use" in data && (
-                  <p className="text-xs text-[#64748b]">
-                    <span className="font-semibold text-[#1e3a8a]">
-                      Cuándo usarlo:
-                    </span>{" "}
-                    {data.when_to_use}
-                  </p>
-                )}
-                {"metrics" in data && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-                    {Object.entries(data.metrics).map(([label, value]) => (
-                      <div
-                        key={label}
-                        className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-[#475569]"
-                      >
-                        <p className="font-semibold text-[#1e3a8a] capitalize">
-                          {label.replace(/_/g, " ")}
-                        </p>
-                        <p>{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
         </div>
       </div>
 
       {/* ROI Projection Chart */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-10 transition-all duration-300 ease-out hover:shadow-md">
-        <div className="flex items-center gap-2 mb-6">
-          <TrendingUp className="w-5 h-5 text-[#1e3a8a]" />
-          <h3 className="text-xl font-semibold text-[#1e3a8a]">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 md:p-10 transition-all duration-300 ease-out hover:shadow-md">
+        <div className="flex items-center gap-2 mb-4 sm:mb-6">
+          <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#1e3a8a]" />
+          <h3 className="text-lg sm:text-xl font-semibold text-[#1e3a8a]">
             ROI Projection
           </h3>
         </div>
-        <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={roiData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="month" stroke="#64748b" />
-            <YAxis stroke="#64748b" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "white",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-              }}
-            />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="Microservices"
-              stroke="#1e3a8a"
-              strokeWidth={3}
-              dot={{ fill: "#1e3a8a", r: 4 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="Monolith"
-              stroke="#64748b"
-              strokeWidth={3}
-              dot={{ fill: "#64748b", r: 4 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-        <p className="text-xs text-[#64748b] mt-4 text-center">
-          Projected ROI over 24 months. 12-month milestone highlighted in the
-          ROI table below.
-        </p>
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-[320px]">
+            <ResponsiveContainer width="100%" height={150}>
+              <LineChart
+                data={[
+                  { month: "M1", Microservices: -50, Monolith: -30 },
+                  { month: "M3", Microservices: -40, Monolith: -10 },
+                  { month: "M6", Microservices: -20, Monolith: 20 },
+                  { month: "M9", Microservices: 10, Monolith: 40 },
+                  { month: "M12", Microservices: 45, Monolith: 55 },
+                  { month: "M18", Microservices: 85, Monolith: 70 },
+                  { month: "M24", Microservices: 130, Monolith: 85 },
+                ]}
+                margin={{ top: 5, right: 10, left: 5, bottom: 40 }}
+              >
+                <CartesianGrid strokeDasharray="2 2" stroke="#e2e8f0" />
+                <XAxis
+                  dataKey="month"
+                  stroke="#64748b"
+                  fontSize={9}
+                  tick={{ fontSize: 9 }}
+                />
+                <YAxis stroke="#64748b" fontSize={9} tick={{ fontSize: 9 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "white",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "4px",
+                    fontSize: 10,
+                    padding: 6,
+                  }}
+                />
+                <Legend
+                  wrapperStyle={{ fontSize: 10, paddingTop: 8 }}
+                  iconSize={10}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Microservices"
+                  stroke="#1e3a8a"
+                  strokeWidth={1.5}
+                  dot={{ fill: "#1e3a8a", r: 2 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Monolith"
+                  stroke="#64748b"
+                  strokeWidth={1.5}
+                  dot={{ fill: "#64748b", r: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       {/* ROI Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-10 transition-all duration-300 ease-out hover:shadow-md">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 md:p-10 transition-all duration-300 ease-out hover:shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-[#1e3a8a]">
+            <h3 className="text-lg sm:text-xl font-semibold text-[#1e3a8a]">
               ROI Summary (12-Month Projection)
             </h3>
             <p className="text-sm text-[#64748b]">
               Visualiza ahorro vs costo con enfoque financiero claro.
             </p>
           </div>
-          <Badge className="bg-[#1e3a8a]/10 text-[#1e3a8a] border border-[#1e3a8a]/20">
+          <Badge className="bg-[#1e3a8a]/10 text-[#1e3a8a] border border-[#1e3a8a]/20 text-xs sm:text-sm">
             12 meses
           </Badge>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50">
-              <TableHead>Arquitectura</TableHead>
-              <TableHead>
-                <div className="flex items-center gap-2">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50">
+                <TableHead className="text-xs sm:text-sm">
+                  Arquitectura
+                </TableHead>
+                <TableHead className="text-xs sm:text-sm">
                   Inversión Inicial
-                  <Hint>
-                    <TooltipTrigger className="text-[#1e3a8a]">
-                      <Info className="h-4 w-4" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      Costo estimado en la fase de arranque.
-                    </TooltipContent>
-                  </Hint>
-                </div>
-              </TableHead>
-              <TableHead>
-                <div className="flex items-center gap-2">
+                </TableHead>
+                <TableHead className="text-xs sm:text-sm">
                   Ahorro Operativo
-                  <Hint>
-                    <TooltipTrigger className="text-[#1e3a8a]">
-                      <Info className="h-4 w-4" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      Beneficio operativo acumulado en 12 meses.
-                    </TooltipContent>
-                  </Hint>
-                </div>
-              </TableHead>
-              <TableHead>
-                <div className="flex items-center gap-2">
+                </TableHead>
+                <TableHead className="text-xs sm:text-sm">
                   ROI 12 Meses
-                  <Hint>
-                    <TooltipTrigger className="text-[#1e3a8a]">
-                      <Info className="h-4 w-4" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      Proyección comparativa al mes 12.
-                    </TooltipContent>
-                  </Hint>
-                </div>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow>
-              <TableCell className="font-semibold text-[#1e3a8a]">
-                Microservices
-              </TableCell>
-              <TableCell className="text-red-600 font-medium">
-                {month1?.Microservices ?? 0}
-              </TableCell>
-              <TableCell className="text-emerald-600 font-medium">
-                +{month12?.Microservices ?? 0}
-              </TableCell>
-              <TableCell className="text-emerald-600 font-semibold">
-                {month12?.Microservices ?? 0}%
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="font-semibold text-[#1e3a8a]">
-                Monolith
-              </TableCell>
-              <TableCell className="text-red-600 font-medium">
-                {month1?.Monolith ?? 0}
-              </TableCell>
-              <TableCell className="text-emerald-600 font-medium">
-                +{month12?.Monolith ?? 0}
-              </TableCell>
-              <TableCell className="text-emerald-600 font-semibold">
-                {month12?.Monolith ?? 0}%
-              </TableCell>
-            </TableRow>
-          </TableBody>
-          <TableCaption>
-            Valores normalizados para comparar tendencias (verde = ahorro,
-            rojo = costo).
-          </TableCaption>
-        </Table>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-semibold text-[#1e3a8a] text-xs sm:text-sm">
+                  Microservices
+                </TableCell>
+                <TableCell className="text-red-600 font-medium text-xs sm:text-sm">
+                  -50
+                </TableCell>
+                <TableCell className="text-emerald-600 font-medium text-xs sm:text-sm">
+                  +45
+                </TableCell>
+                <TableCell className="text-emerald-600 font-semibold text-xs sm:text-sm">
+                  45%
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-semibold text-[#1e3a8a] text-xs sm:text-sm">
+                  Monolith
+                </TableCell>
+                <TableCell className="text-red-600 font-medium text-xs sm:text-sm">
+                  -30
+                </TableCell>
+                <TableCell className="text-emerald-600 font-medium text-xs sm:text-sm">
+                  +55
+                </TableCell>
+                <TableCell className="text-emerald-600 font-semibold text-xs sm:text-sm">
+                  55%
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Button
           onClick={handleBack}
           variant="outline"
-          className="border-[#64748b] text-[#64748b] hover:bg-slate-50 transition-all duration-300"
+          className="border-[#64748b] text-[#64748b] hover:bg-slate-50 transition-all duration-300 text-sm sm:text-base"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
+          {/* 4. ADD onClick={handleDownloadPDF} HERE */}
           <Button
+            onClick={handleDownloadPDF}
+            disabled={isGeneratingPDF}
             variant="outline"
-            className="border-[#1e3a8a] text-[#1e3a8a] hover:bg-blue-50 transition-all duration-300"
+            className="border-[#1e3a8a] text-[#1e3a8a] hover:bg-blue-50 transition-all duration-300 text-sm sm:text-base"
           >
             <Download className="mr-2 h-4 w-4" />
-            Descargar Reporte PDF
+            {isGeneratingPDF ? "Generando..." : "Descargar Reporte PDF"}
           </Button>
+
           <Button
             onClick={handleCopyLink}
-            className="bg-white border border-slate-200 text-[#1e3a8a] hover:bg-slate-50 transition-all duration-300"
+            className="bg-white border border-slate-200 text-[#1e3a8a] hover:bg-slate-50 transition-all duration-300 text-sm sm:text-base"
           >
             <Share2 className="mr-2 h-4 w-4" />
             {copied ? "Link Copiado" : "Compartir con mi Equipo"}
           </Button>
           <Button
             onClick={handleReset}
-            className="bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 text-white px-8 transition-all duration-300"
+            className="bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 text-white px-6 sm:px-8 transition-all duration-300 text-sm sm:text-base"
           >
             <RotateCcw className="mr-2 h-4 w-4" />
             Volver al Inicio
