@@ -1,0 +1,93 @@
+{
+  "project": "Technical Decision Framework",
+  "explanations": {
+    "monolith": {
+      "human": {
+        "title": "Monolito: La Oficina Tradicional",
+        "analogy": "Imagina una oficina donde todos trabajan en el mismo espacio. Comunicación rápida, pero si un departamento crece, todo se vuelve caótico.",
+        "pros": [
+          "✅ Fácil de entender y mantener (equipo pequeño)",
+          "✅ Despliegue simple (un solo servicio)",
+          "✅ Menos complejidad inicial (menos herramientas)"
+        ],
+        "cons": [
+          "❌ Difícil escalar equipos grandes",
+          "❌ Todo se cae si algo falla",
+          "❌ Lento para añadir nuevas features"
+        ],
+        "when_to_use": "Perfecto para startups pequeñas, MVPs rápidos, o equipos de <10 personas."
+      },
+      "technical": {
+        "title": "Monolithic Architecture",
+        "definition": "Single deployable unit with tightly coupled components sharing memory space and database.",
+        "pros": [
+          "✅ Simpler deployment pipeline (single artifact)",
+          "✅ Lower network latency (in-process calls)",
+          "✅ Easier transactional consistency (single database)"
+        ],
+        "cons": [
+          "❌ Horizontal scaling limitations (scale entire app)",
+          "❌ Technology lock-in (single runtime)",
+          "❌ Higher blast radius (single point of failure)"
+        ],
+        "metrics": {
+          "deployment_frequency": "Low to Medium",
+          "mean_time_to_recovery": "High",
+          "team_autonomy": "Low"
+        }
+      }
+    },
+    "microservices": {
+      "human": {
+        "title": "Microservicios: Departamentos Independientes",
+        "analogy": "Cada departamento tiene su oficina, presupuesto y reglas. Pueden crecer sin afectar a otros, pero necesitan coordinación constante.",
+        "pros": [
+          "✅ Equipos independientes (cada uno hace lo suyo)",
+          "✅ Escalabilidad flexible (solo crece lo que necesitas)",
+          "✅ Resiliente (si falla uno, otros siguen)"
+        ],
+        "cons": [
+          "❌ Más complejo de coordinar",
+          "❌ Costo inicial más alto",
+          "❌ Necesitas DevOps sólido"
+        ],
+        "when_to_use": "Ideal para empresas con >50k usuarios, múltiples equipos, o cuando la velocidad de entrega es crítica."
+      },
+      "technical": {
+        "title": "Microservices Architecture",
+        "definition": "Distributed system of loosely coupled services with independent deployment, scaling, and technology stacks.",
+        "pros": [
+          "✅ Independent scaling per service",
+          "✅ Polyglot persistence and technology freedom",
+          "✅ Fault isolation and resilience patterns"
+        ],
+        "cons": [
+          "❌ Distributed transaction complexity",
+          "❌ Network latency and reliability concerns",
+          "❌ Operational overhead (monitoring, orchestration)"
+        ],
+        "metrics": {
+          "deployment_frequency": "High",
+          "mean_time_to_recovery": "Low",
+          "team_autonomy": "High"
+        }
+      }
+    }
+  },
+  "roi_examples": {
+    "startup": {
+      "scenario": "Startup con 10k usuarios mensuales",
+      "monolith_cost": "$5,000/mes (infra + mantenimiento)",
+      "microservices_cost": "$12,000/mes (infra + DevOps)",
+      "recommendation": "Monolito (ROI positivo por 2 años)",
+      "break_even": "A los 50k usuarios mensuales"
+    },
+    "enterprise": {
+      "scenario": "Empresa con 100k usuarios y 5 equipos",
+      "monolith_cost": "$25,000/mes (infra + coordinación)",
+      "microservices_cost": "$18,000/mes (infra + autonomía)",
+      "recommendation": "Microservicios (ROI positivo inmediato)",
+      "break_even": "Ya superado"
+    }
+  }
+}
