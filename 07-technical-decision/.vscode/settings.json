@@ -1,0 +1,14 @@
+{
+  "github.copilot.chat.contextVariables": [
+    {
+      "name": "project_context",
+      "description": "Contexto del Technical Decision Framework (Proyecto 07)",
+      "files": [
+        "./README.md",
+        "./ADR-001.md",
+        "./content-dual.json"
+      ]
+    }
+  ],
+  "github.copilot.chat.conversationContext": true
+}
