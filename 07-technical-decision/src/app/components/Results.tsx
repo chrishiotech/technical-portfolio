@@ -42,6 +42,7 @@ export function Results() {
   const [audience, setAudience] = useState<"human" | "technical">("human");
   const [copied, setCopied] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false); // Optional loading state
+  const [isDownloaded, setIsDownloaded] = useState(false); // Downloaded state to prevent multiple clicks
 
   useEffect(() => {
     const unsubscribe = wizardStore.subscribe(() => {
@@ -79,108 +80,307 @@ export function Results() {
   const { recommended, confidence } = calculateRecommendation();
 
   const handleDownloadPDF = async () => {
-    setIsGeneratingPDF(true);
-    const element = document.getElementById("report-content"); // Back to report-content only
-
-    if (!element) {
-      setIsGeneratingPDF(false);
+    // Prevent multiple downloads
+    if (isDownloaded) {
       return;
     }
 
+    setIsGeneratingPDF(true);
+
     try {
-      // 1. Create a temporary clone of element to clean it up before capturing
-      const clone = element.cloneNode(true) as HTMLElement;
+      // Create a custom PDF layout instead of cloning DOM
       const container = document.createElement("div");
       container.style.position = "fixed";
-      container.style.left = "-9999px"; // Move off-screen
+      container.style.left = "-9999px";
       container.style.top = "0";
-      container.style.width = "1200px"; // Fixed width for PDF
-      container.appendChild(clone);
+      container.style.width = "1200px";
+      container.style.fontFamily = "system-ui, -apple-system, sans-serif";
+      container.style.backgroundColor = "#ffffff";
+      container.style.padding = "40px";
+      container.style.boxSizing = "border-box";
+
+      // Custom PDF content with NO oklch colors
+      container.innerHTML = `
+        <div style="text-align: center; margin-bottom: 40px;">
+          <h1 style="color: #1e3a8a; font-size: 32px; font-weight: 700; margin: 0;">
+            Technical Decision Framework
+          </h1>
+          <div style="width: 80px; height: 4px; background: #1e3a8a; margin: 20px auto;"></div>
+          <p style="color: #64748b; font-size: 16px; margin: 0;">
+            Architecture Analysis Report
+          </p>
+        </div>
+        
+        <div style="background: #f8fafc; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #1e3a8a;">
+          <h2 style="color: #1e3a8a; font-size: 24px; font-weight: 600; margin: 0 0 20px 0;">
+            🏗️ Architecture Recommendation
+          </h2>
+          <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+            <div style="background: #1e3a8a; color: white; padding: 15px 25px; border-radius: 8px; font-size: 20px; font-weight: 600;">
+              ${recommended === "microservices" ? "MICROSERVICES" : "MONOLITH"}
+            </div>
+            <div style="background: #f1f5f9; color: #1e3a8a; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 500;">
+              Confidence: ${confidence}%
+            </div>
+          </div>
+          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin: 0;">
+            Based on your project requirements and business goals, our analysis recommends this architecture approach for optimal performance and scalability.
+          </p>
+        </div>
+        
+        <!-- ROI Projection Chart -->
+        <div style="margin-bottom: 30px;">
+          <h3 style="color: #1e3a8a; font-size: 20px; font-weight: 600; margin: 0 0 20px 0;">
+            📈 ROI Projection (24-Month Forecast)
+          </h3>
+          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="height: 200px; position: relative; display: flex; align-items: center; justify-content: center;">
+              <div style="text-align: center; width: 100%;">
+                <p style="color: #1e3a8a; font-size: 16px; font-weight: 600; margin: 0 0 10px 0;">
+                  📊 Proyección de Retorno de Inversión
+                </p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;">
+                  <div style="text-align: center;">
+                    <div style="color: #1e3a8a; font-size: 24px; font-weight: 700; margin-bottom: 10px;">
+                      Microservices
+                    </div>
+                    <div style="color: #64748b; font-size: 18px; margin-bottom: 5px;">
+                      Inversión inicial: -50
+                    </div>
+                    <div style="color: #16a34a; font-size: 18px; margin-bottom: 5px;">
+                      Ahorro 24 meses: +130
+                    </div>
+                    <div style="color: #16a34a; font-size: 20px; font-weight: 600;">
+                      ROI: 160%
+                    </div>
+                  </div>
+                  <div style="text-align: center;">
+                    <div style="color: #64748b; font-size: 24px; font-weight: 700; margin-bottom: 10px;">
+                      Monolith
+                    </div>
+                    <div style="color: #dc2626; font-size: 18px; margin-bottom: 5px;">
+                      Inversión inicial: -30
+                    </div>
+                    <div style="color: #16a34a; font-size: 18px; margin-bottom: 5px;">
+                      Ahorro 24 meses: +85
+                    </div>
+                    <div style="color: #16a34a; font-size: 20px; font-weight: 600;">
+                      ROI: 183%
+                    </div>
+                  </div>
+                </div>
+                <p style="color: #64748b; font-size: 14px; text-align: center; margin: 0;">
+                  Basado en análisis de costos y beneficios proyectados a 24 meses
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- ROI Projection Chart (Visual) -->
+        <div style="margin-bottom: 30px;">
+          <h3 style="color: #1e3a8a; font-size: 20px; font-weight: 600; margin: 0 0 20px 0;">
+            📊 ROI Projection Chart (24-Month Visual)
+          </h3>
+          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="height: 200px; position: relative;">
+              <!-- HTML5 Canvas Chart -->
+              <canvas id="roi-chart" width="800" height="200" style="width: 100%; height: 100%;"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- ROI Summary Table -->
+        <div style="margin-bottom: 30px;">
+          <h3 style="color: #1e3a8a; font-size: 20px; font-weight: 600; margin: 0 0 20px 0;">
+            📈 ROI Summary (12-Month Projection)
+          </h3>
+          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <thead>
+                <tr style="background: #e2e8f0;">
+                  <th style="padding: 12px; text-align: left; color: #1e3a8a; font-weight: 600; border-bottom: 2px solid #1e3a8a;">Architecture</th>
+                  <th style="padding: 12px; text-align: left; color: #1e3a8a; font-weight: 600; border-bottom: 2px solid #1e3a8a;">Initial Investment</th>
+                  <th style="padding: 12px; text-align: left; color: #1e3a8a; font-weight: 600; border-bottom: 2px solid #1e3a8a;">Operational Savings</th>
+                  <th style="padding: 12px; text-align: left; color: #1e3a8a; font-weight: 600; border-bottom: 2px solid #1e3a8a;">ROI 12 Months</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                  <td style="padding: 12px; color: #1e3a8a; font-weight: 600;">Microservices</td>
+                  <td style="padding: 12px; color: #dc2626; font-weight: 500;">-50</td>
+                  <td style="padding: 12px; color: #16a34a; font-weight: 500;">+45</td>
+                  <td style="padding: 12px; color: #16a34a; font-weight: 600;">45%</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; color: #1e3a8a; font-weight: 600;">Monolith</td>
+                  <td style="padding: 12px; color: #dc2626; font-weight: 500;">-30</td>
+                  <td style="padding: 12px; color: #16a34a; font-weight: 500;">+55</td>
+                  <td style="padding: 12px; color: #16a34a; font-weight: 600;">55%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+          <h3 style="color: #1e3a8a; font-size: 20px; font-weight: 600; margin: 0 0 20px 0;">
+            📊 Analysis Summary
+          </h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <h4 style="color: #1e3a8a; font-size: 16px; font-weight: 600; margin: 0 0 10px 0;">
+                Project Details
+              </h4>
+              <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
+                <strong>Project:</strong> ${formData.projectName || "Unnamed Project"}
+              </p>
+              <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
+                <strong>Team Size:</strong> ${formData.teamSize || "Not specified"}
+              </p>
+              <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
+                <strong>Expected Load:</strong> ${formData.userLoad || "Not specified"}
+              </p>
+            </div>
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <h4 style="color: #1e3a8a; font-size: 16px; font-weight: 600; margin: 0 0 10px 0;">
+                Business Priorities
+              </h4>
+              <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
+                <strong>Top Priority:</strong> ${formData.flexibility > formData.cost ? "Flexibility" : formData.cost > formData.scalability ? "Cost Efficiency" : "Scalability"}
+              </p>
+              <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
+                <strong>Budget Range:</strong> ${formData.cost > 3 ? "High" : formData.cost > 1 ? "Medium" : "Low"}
+              </p>
+              <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
+                <strong>Timeline:</strong> ${formData.timeToMarket > 3 ? "Long-term" : formData.timeToMarket > 1 ? "Medium-term" : "Short-term"}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div style="background: #1e3a8a; color: white; padding: 30px; border-radius: 12px; text-align: center; margin-top: 40px;">
+          <p style="font-size: 18px; font-weight: 600; margin: 0;">
+            📋 Generated by Technical Decision Framework
+          </p>
+          <p style="font-size: 14px; margin: 10px 0 0 0; opacity: 0.9;">
+            Christian Aguirre • Architecture Consulting
+          </p>
+        </div>
+      `;
+
       document.body.appendChild(container);
 
-      // 2. Replace only problematic colors, keep layout intact
-      const replaceAllStyles = (element: Element) => {
-        const htmlEl = element as HTMLElement;
+      // Wait for DOM to be ready, then draw the chart
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-        // Get computed style to check for oklch/oklab
-        const computedStyle = window.getComputedStyle(htmlEl);
+      // Draw the chart on the canvas
+      const canvas = container.querySelector("#roi-chart") as HTMLCanvasElement;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          // Clear canvas
+          ctx.clearRect(0, 0, 800, 200);
 
-        // Check and replace background color
-        const bgColor = computedStyle.backgroundColor;
-        if (
-          bgColor &&
-          (bgColor.includes("oklch") || bgColor.includes("oklab"))
-        ) {
-          htmlEl.style.backgroundColor = "#ffffff";
+          // Set styles
+          ctx.font = "12px system-ui, sans-serif";
+          ctx.strokeStyle = "#e2e8f0";
+          ctx.lineWidth = 1;
+
+          // Draw grid lines
+          ctx.beginPath();
+          ctx.moveTo(50, 20);
+          ctx.lineTo(750, 20);
+          ctx.moveTo(50, 60);
+          ctx.lineTo(750, 60);
+          ctx.moveTo(50, 100);
+          ctx.lineTo(750, 100);
+          ctx.moveTo(50, 140);
+          ctx.lineTo(750, 140);
+          ctx.moveTo(50, 180);
+          ctx.lineTo(750, 180);
+          ctx.stroke();
+
+          // Draw labels
+          ctx.fillStyle = "#64748b";
+          ctx.textAlign = "end";
+          ctx.fillText("100", 40, 25);
+          ctx.fillText("50", 40, 65);
+          ctx.fillText("0", 40, 105);
+          ctx.fillText("50", 40, 145);
+          ctx.fillText("100", 40, 185);
+
+          ctx.textAlign = "center" as CanvasTextAlign;
+          ctx.fillText("M1", 100, 195);
+          ctx.fillText("M3", 200, 195);
+          ctx.fillText("M6", 300, 195);
+          ctx.fillText("M9", 400, 195);
+          ctx.fillText("M12", 500, 195);
+          ctx.fillText("M18", 600, 195);
+          ctx.fillText("M24", 700, 195);
+
+          // Draw Microservices line
+          ctx.beginPath();
+          ctx.strokeStyle = "#1e3a8a";
+          ctx.lineWidth = 3;
+          ctx.moveTo(100, 140);
+          ctx.lineTo(200, 120);
+          ctx.lineTo(300, 100);
+          ctx.lineTo(400, 110);
+          ctx.lineTo(500, 80);
+          ctx.lineTo(600, 60);
+          ctx.lineTo(700, 40);
+          ctx.stroke();
+
+          // Draw Monolith line
+          ctx.beginPath();
+          ctx.strokeStyle = "#64748b";
+          ctx.lineWidth = 3;
+          ctx.moveTo(100, 120);
+          ctx.lineTo(200, 110);
+          ctx.lineTo(300, 120);
+          ctx.lineTo(400, 130);
+          ctx.lineTo(500, 140);
+          ctx.lineTo(600, 120);
+          ctx.lineTo(700, 100);
+          ctx.stroke();
+
+          // Draw legend
+          ctx.fillStyle = "#1e3a8a";
+          ctx.fillRect(550, 25, 15, 3);
+          ctx.fillStyle = "#1e3a8a";
+          ctx.font = "bold 12px system-ui, sans-serif";
+          ctx.textAlign = "left";
+          ctx.fillText("Microservices", 570, 28);
+
+          ctx.fillStyle = "#64748b";
+          ctx.fillRect(550, 40, 15, 3);
+          ctx.fillStyle = "#64748b";
+          ctx.fillText("Monolith", 570, 43);
         }
+      }
 
-        // Check and replace text color
-        const textColor = computedStyle.color;
-        if (
-          textColor &&
-          (textColor.includes("oklch") || textColor.includes("oklab"))
-        ) {
-          htmlEl.style.color = "#000000";
-        }
-
-        // Recursively process children
-        Array.from(element.children).forEach((child) =>
-          replaceAllStyles(child as Element),
-        );
-      };
-
-      // 3. Remove all <style> tags that might contain oklch
-      Array.from(clone.querySelectorAll("style")).forEach((style: Element) =>
-        (style as HTMLElement).remove(),
-      );
-
-      // 4. Keep layout classes, remove only color-related classes
-      Array.from(clone.querySelectorAll("*")).forEach((el: Element) => {
-        const htmlEl = el as HTMLElement;
-        const classList = htmlEl.className;
-
-        if (classList && typeof classList === "string") {
-          // Keep layout classes, remove only color-related ones
-          const safeClasses = classList
-            .split(" ")
-            .filter((cls) => {
-              // Remove classes that might contain oklch/oklab colors
-              return (
-                !cls.includes("bg-") &&
-                !cls.includes("text-") &&
-                !cls.includes("border-") &&
-                !cls.includes("shadow-")
-              );
-            })
-            .join(" ");
-          htmlEl.className = safeClasses;
-        }
-      });
-
-      // Apply the style replacement
-      replaceAllStyles(clone);
-
-      console.log("2. Creating canvas snapshot...");
-
-      const canvas = await html2canvas(clone, {
-        scale: 1.5, // Reduced scale to fit in one page
+      const pdfCanvas = await html2canvas(container, {
+        scale: 1.5,
         useCORS: true,
         backgroundColor: "#ffffff",
+        width: 1200,
+        height: 1600,
         logging: false,
         allowTaint: true,
-        width: 1200, // Fixed width for PDF
-        height: 1600, // Approximate height for A4 ratio
-        // Additional options to prevent color parsing issues
+        // Ignore ALL elements that might cause color parsing issues
         ignoreElements: (element) => {
-          // Ignore elements that might cause issues
-          return element.tagName === "STYLE" || element.tagName === "LINK";
+          return (
+            element.tagName === "STYLE" ||
+            element.tagName === "LINK" ||
+            element.tagName === "SCRIPT" ||
+            element.tagName === "META" ||
+            element.tagName === "HEAD"
+          );
         },
       });
 
-      // Clean up the clone
-      document.body.removeChild(container);
-
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = pdfCanvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const imgProps = pdf.getImageProperties(imgData);
@@ -188,6 +388,9 @@ export function Results() {
 
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, imgHeight);
       pdf.save("reporte-arquitectura.pdf");
+
+      // Mark as downloaded
+      setIsDownloaded(true);
     } catch (error) {
       console.error("❌ ERROR generating PDF:", error);
       alert("Hubo un error al generar el PDF. Por favor intenta de nuevo.");
@@ -502,12 +705,18 @@ export function Results() {
           {/* 4. ADD onClick={handleDownloadPDF} HERE */}
           <Button
             onClick={handleDownloadPDF}
-            disabled={isGeneratingPDF}
+            disabled={isGeneratingPDF || isDownloaded}
             variant="outline"
-            className="border-[#1e3a8a] text-[#1e3a8a] hover:bg-blue-50 transition-all duration-300 text-sm sm:text-base"
+            className={`border-[#1e3a8a] text-[#1e3a8a] hover:bg-blue-50 transition-all duration-300 text-sm sm:text-base ${
+              isDownloaded ? "bg-green-50 border-green-600 text-green-700" : ""
+            }`}
           >
             <Download className="mr-2 h-4 w-4" />
-            {isGeneratingPDF ? "Generando..." : "Descargar Reporte PDF"}
+            {isGeneratingPDF
+              ? "Generando..."
+              : isDownloaded
+                ? "✓ Archivo Descargado"
+                : "Descargar Reporte PDF"}
           </Button>
 
           <Button
